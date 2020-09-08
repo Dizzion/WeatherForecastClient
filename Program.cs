@@ -1,18 +1,18 @@
 ﻿using System;
+using System.Threading.Tasks;
+using Microsoft.Identity.Client;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.Identity.Client;
-using SecureAPIClient;
 
-namespace SecureClient
+
+namespace SecureAPIClient
 {
     class Program
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("making the call, fingers crossed....");
+            Console.WriteLine("Making the call...");
             RunAsync().GetAwaiter().GetResult();
         }
 
@@ -35,7 +35,7 @@ namespace SecureClient
                 result = await app.AcquireTokenForClient(ResourceIds).ExecuteAsync();
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.WriteLine("Token acquired \n");
-                Console.WriteLine(result.AccessToken);
+                Console.WriteLine($"{result.AccessToken} \n");
                 Console.ResetColor();
             }
             catch (MsalClientException ex)
@@ -47,7 +47,9 @@ namespace SecureClient
 
             if (!string.IsNullOrEmpty(result.AccessToken))
             {
-                var httpClient = new HttpClient();
+                HttpClientHandler clientHandler = new HttpClientHandler();
+                clientHandler.ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => {return true;};
+                var httpClient = new HttpClient(clientHandler);
                 var defaultRequestHeaders = httpClient.DefaultRequestHeaders;
 
                 if (defaultRequestHeaders.Accept == null ||
@@ -75,6 +77,8 @@ namespace SecureClient
                 }
                 Console.ResetColor();
             }
+
         }
+
     }
 }
