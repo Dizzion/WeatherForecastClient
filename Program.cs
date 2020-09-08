@@ -4,6 +4,7 @@ using System.Net.Http.Headers;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Identity.Client;
+using SecureAPIClient;
 
 namespace SecureClient
 {
@@ -17,7 +18,7 @@ namespace SecureClient
 
         private static async Task RunAsync()
         {
-            AuthConfig config = AuthConfig.ReadJsonFromFile("appsettings.json");
+            AuthConfig config = AuthConfig.ReadFromJsonFile("appsettings.json");
 
             IConfidentialClientApplication app;
 
@@ -26,15 +27,14 @@ namespace SecureClient
                 .WithAuthority(new Uri(config.Authority))
                 .Build();
 
-            string[] ResourceIds = new string[] {config.ResourceId};
+            string[] ResourceIds = new string[] { config.ResourceID };
 
             AuthenticationResult result = null;
-
             try
             {
                 result = await app.AcquireTokenForClient(ResourceIds).ExecuteAsync();
                 Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("Token Aquired \n");
+                Console.WriteLine("Token acquired \n");
                 Console.WriteLine(result.AccessToken);
                 Console.ResetColor();
             }
@@ -45,24 +45,22 @@ namespace SecureClient
                 Console.ResetColor();
             }
 
-            if(!string.IsNullOrEmpty(result.AccessToken))
+            if (!string.IsNullOrEmpty(result.AccessToken))
             {
                 var httpClient = new HttpClient();
                 var defaultRequestHeaders = httpClient.DefaultRequestHeaders;
 
-                if (defaultRequestHeaders.Accept == null || defaultRequestHeaders.Accept.Any
-                (m=> m.MediaType == "application/json"))
+                if (defaultRequestHeaders.Accept == null ||
+                   !defaultRequestHeaders.Accept.Any(m => m.MediaType == "application/json"))
                 {
                     httpClient.DefaultRequestHeaders.Accept.Add(new
-                    MediaTypeWithQualityHeaderValue("application/json"));
+                      MediaTypeWithQualityHeaderValue("application/json"));
                 }
-
                 defaultRequestHeaders.Authorization =
-                    new AuthenticationHeaderValue("bearer", result.AccessToken);
+                  new AuthenticationHeaderValue("bearer", result.AccessToken);
 
                 HttpResponseMessage response = await httpClient.GetAsync(config.BaseAddress);
-
-                if(response.IsSuccessStatusCode)
+                if (response.IsSuccessStatusCode)
                 {
                     Console.ForegroundColor = ConsoleColor.Green;
                     string json = await response.Content.ReadAsStringAsync();
@@ -71,7 +69,7 @@ namespace SecureClient
                 else
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine($"Failed to call API: {response.StatusCode}");
+                    Console.WriteLine($"Failed to call the Web Api: {response.StatusCode}");
                     string content = await response.Content.ReadAsStringAsync();
                     Console.WriteLine($"Content: {content}");
                 }
